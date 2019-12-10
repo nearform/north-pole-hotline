@@ -22,6 +22,7 @@ import MessageComposer from "../components/MessageComposer";
 import ChatUsersDialog from "../components/ChatUsersDialog";
 import InviteDialog from "../components/InviteDialog";
 import NewUserNotification from "../components/NewUserNotification";
+import JoinChatDialog from "../components/JoinChatDialog"
 
 const ADD_USER_TO_CHAT_MUTATION = `
 mutation AddUserToChat($chatId: uuid!, $userId: uuid!) {
@@ -168,7 +169,7 @@ function reducer(state, action) {
         ...state,
         users: [...state.users, action.user],
         newUserJoined: action.user,
-        isNewUserJoinedSnackbarOpen: true
+        isNewUserJoinedSnackbarOpen: action.user.id !== state.user.id
       };
     case ACTION_TYPES.OPEN_INVITE_DIALOG:
       return {
@@ -351,9 +352,7 @@ function ChatPage() {
     });
   };
 
-  const addNewUser = async event => {
-    event.preventDefault();
-    const name = event.target[0].value;
+  const addNewUser = async (name) => {
     try {
       const { data } = await createUser({ variables: { user: { name } } });
       const [user] = data.insert_users.returning;
@@ -433,14 +432,9 @@ function ChatPage() {
   }, [fetchChatInfo]);
 
   if (!state.user) {
+    debugger;
     return (
-      <form onSubmit={addNewUser}>
-        <label>
-          Your Name:
-          <input type="text" name="name" placeholder="What's your name?" />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
+      <JoinChatDialog chatName={state.chatName || state.chatId } onSubmit={addNewUser} />
     );
   }
 
