@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
 import Drawer from "@material-ui/core/Drawer";
@@ -33,7 +32,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export default function ButtonAppBar() {
+export default function ButtonAppBar(props) {
   const classes = useStyles();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toggleDrawer = () => {
@@ -47,24 +46,24 @@ export default function ButtonAppBar() {
 
   return (
     <div className={classes.root}>
-      <AppBar position="sticky" color="inherit">
+      <AppBar position="fixed" color="inherit">
         <Drawer open={drawerOpen} onClose={toggleDrawer}>
           <List>
-            <ListItem>
-              <Link to="/" underline="none">
+            <Link to="/" underline="none" color="inherit" onClick={toggleDrawer}>
+              <ListItem>
                 <ListItemIcon>
-                  <HomeIcon />
+                  <HomeIcon color="secondary" />
                 </ListItemIcon>
-                Home
-              </Link>
-            </ListItem>
+                <ListItemText>Home</ListItemText>
+              </ListItem>
+            </Link>
             <Divider />
             <ListItem>
               <ListItemText>Chats:</ListItemText>
             </ListItem>
             {loading && <ListItemText>Loading...</ListItemText>}
             {chats.map(({ chat }) => (
-              <ListItem key={chat.id}>
+              <ListItem key={chat.id} onClick={toggleDrawer}>
                 <Link to={`/chat/${chat.id}`}>
                   <ListItemText>{chat.name || chat.id}</ListItemText>
                 </Link>
@@ -80,11 +79,9 @@ export default function ButtonAppBar() {
             aria-label="menu"
             onClick={toggleDrawer}
           >
-            <MenuIcon />
+            <MenuIcon color="secondary" />
           </IconButton>
-          <Typography variant="h6" className={classes.title}>
-            North Pole Hotline
-          </Typography>
+          {props.children}
         </Toolbar>
       </AppBar>
     </div>

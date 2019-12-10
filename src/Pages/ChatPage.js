@@ -6,15 +6,22 @@ import { useSubscription, useMutation, useManualQuery } from "graphql-hooks";
 import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
 import Box from "@material-ui/core/Box";
+import Typography from "@material-ui/core/Typography";
+import Hidden from "@material-ui/core/Hidden";
+import Grid from "@material-ui/core/Grid";
+import Button from "@material-ui/core/Button";
 
 // hooks
-import useUser from '../hooks/useUser'
+import useUser from "../hooks/useUser";
 
 // components
 import Header from "../components/Header";
 import Snowfall from "../components/Snowfall";
 import Message from "../components/Message";
 import MessageComposer from "../components/MessageComposer";
+import ChatUsersDialog from "../components/ChatUsersDialog";
+import InviteDialog from "../components/InviteDialog";
+import NewUserNotification from "../components/NewUserNotification";
 
 const ADD_USER_TO_CHAT_MUTATION = `
 mutation AddUserToChat($chatId: uuid!, $userId: uuid!) {
@@ -35,18 +42,29 @@ mutation CreateUser($user: users_insert_input!) {
 }
 `;
 
-const INITIAL_MESSAGES_QUERY = `
-query InitialMessages($chatId: uuid!) {
-  messages(where: {chat_id: { _eq: $chatId}}, order_by: { created_at: asc }) {
+const CHAT_INFO_QUERY = `
+query GetChatInfo($id: uuid!) {
+  chats_by_pk(id: $id) {
     id
-    body
-    user {
+    name
+    messages(where: {chat_id: {_eq: $id}}, order_by: {created_at: asc}) {
       id
-      name
+      body
+      user {
+        id
+        name
+      }
+      created_at
     }
-    created_at
+    users {
+      user {
+        id
+        name
+      }
+    }
   }
 }
+
 `;
 
 const LATEST_MESSAGE_SUBSCRIPTION = `
@@ -59,6 +77,17 @@ subscription LatestMessage($chatId: uuid!, $now: timestamptz!) {
       name
     }
     created_at
+  }
+}
+`;
+
+const NEW_USER_SUBSCRIPTION = `
+subscription NewChatUser($chatId: uuid!, $now: timestamptz!) {
+  chat_users(where: {chat_id: {_eq: $chatId}, created_at: {_gt: $now}}, order_by: {created_at: desc}, limit: 1) {
+    user {
+      id
+      name
+    }
   }
 }
 `;
@@ -81,12 +110,18 @@ mutation SendMessage($message: messages_insert_input!) {
 
 const ACTION_TYPES = {
   ERROR: "ERROR",
-  INITIAL_MESSAGES_LOADED: "INITIAL_MESSAGES_LOADED",
+  CHAT_LOADED: "CHAT_LOADED",
   NEW_USER_ADDED: "NEW_USER_ADDED",
+  USER_JOINED_CHAT: "USER_JOINED_CHAT",
   NEW_MESSAGE: "NEW_MESSAGE",
   UPDATE_MESSAGE_TO_SEND: "UPDATE_MESSAGE_TO_SEND",
   MESSAGE_SENT: "MESSAGE_SENT",
-  REPLACE_TEMP_MESSAGE: "REPLACE_TEMP_MESSAGE"
+  REPLACE_TEMP_MESSAGE: "REPLACE_TEMP_MESSAGE",
+  OPEN_USERS_DIALOG: "OPEN_USERS_DIALOG",
+  CLOSE_USERS_DIALOG: "CLOSE_USERS_DIALOG",
+  OPEN_INVITE_DIALOG: "OPEN_INVITE_DIALOG",
+  CLOSE_INVITE_DIALOG: "CLOSE_INVITE_DIALOG",
+  CLOSE_NEW_USER_SNACKBAR: "CLOSE_NEW_USER_SNACKBAR"
 };
 
 function reducer(state, action) {
@@ -96,10 +131,12 @@ function reducer(state, action) {
         ...state,
         error: action.error
       };
-    case ACTION_TYPES.INITIAL_MESSAGES_LOADED:
+    case ACTION_TYPES.CHAT_LOADED:
       return {
         ...state,
         messages: action.messages,
+        chatName: action.chatName,
+        users: action.users,
         fetchingMessages: false
       };
     case ACTION_TYPES.NEW_USER_ADDED:
@@ -126,20 +163,70 @@ function reducer(state, action) {
           return msg.id === "temp" ? action.message : msg;
         })
       };
+    case ACTION_TYPES.USER_JOINED_CHAT:
+      return {
+        ...state,
+        users: [...state.users, action.user],
+        newUserJoined: action.user,
+        isNewUserJoinedSnackbarOpen: true
+      };
+    case ACTION_TYPES.OPEN_INVITE_DIALOG:
+      return {
+        ...state,
+        isInviteDialogOpen: true
+      };
+    case ACTION_TYPES.CLOSE_INVITE_DIALOG:
+      return {
+        ...state,
+        isInviteDialogOpen: false
+      };
+    case ACTION_TYPES.OPEN_USERS_DIALOG:
+      return {
+        ...state,
+        isUsersDialogOpen: true
+      };
+    case ACTION_TYPES.CLOSE_USERS_DIALOG:
+      return {
+        ...state,
+        isUsersDialogOpen: false
+      };
+    case ACTION_TYPES.CLOSE_NEW_USER_SNACKBAR:
+      return {
+        ...state,
+        newUserJoined: null,
+        isNewUserJoinedSnackbarOpen: false
+      };
     default:
       return state;
   }
 }
 
 const useStyles = makeStyles(theme => ({
+  vertAlign: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center"
+  },
+  userList: {
+    textOverflow: "ellipsis",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    "&:hover": {
+      textDecoration: "underline"
+    }
+  },
   messagesContainer: {
     height: "calc(85vh - 65px)",
     overflow: "scroll"
+  },
+  newUserJoinedSB: {
+    backgroundColor: theme.palette.primary.main
   }
 }));
 
 function ChatPage() {
-  const user = useUser()
+  const user = useUser();
   const classes = useStyles();
   const { id: chatId } = useParams();
   const [state, dispatch] = useReducer(reducer, {
@@ -148,21 +235,27 @@ function ChatPage() {
     error: null,
     tempMessageIndex: null,
     messages: [],
-    user
+    chatName: "loading...",
+    user,
+    users: [],
+    isInviteDialogOpen: false,
+    isUsersDialogOpen: false,
+    isNewUserJoinedSnackbarOpen: false,
+    newUserJoined: null
   });
 
   const [createUser] = useMutation(CREATE_USER_MUTATION);
   const [addUserToChat] = useMutation(ADD_USER_TO_CHAT_MUTATION);
 
-  const [fetchInitialMessages] = useManualQuery(INITIAL_MESSAGES_QUERY, {
+  const [fetchChatInfo] = useManualQuery(CHAT_INFO_QUERY, {
     variables: {
-      chatId
+      id: chatId
     }
   });
 
   const [sendMessage] = useMutation(SEND_MESSAGE_MUTATION);
 
-  const subOperation = {
+  const latestMsgOperation = {
     query: LATEST_MESSAGE_SUBSCRIPTION,
     variables: {
       chatId,
@@ -170,7 +263,7 @@ function ChatPage() {
     }
   };
 
-  useSubscription(subOperation, ({ data, errors }) => {
+  useSubscription(latestMsgOperation, ({ data, errors }) => {
     if (errors) {
       return dispatch({
         type: ACTION_TYPES.ERROR,
@@ -200,6 +293,34 @@ function ChatPage() {
     dispatch({
       type: ACTION_TYPES.NEW_MESSAGE,
       message
+    });
+  });
+
+  const userJoinedOperation = {
+    query: NEW_USER_SUBSCRIPTION,
+    variables: {
+      chatId,
+      now: new Date().toISOString()
+    }
+  };
+
+  useSubscription(userJoinedOperation, ({ data, errors }) => {
+    if (errors) {
+      return dispatch({
+        type: ACTION_TYPES.ERROR,
+        error: errors[0]
+      });
+    }
+
+    if (!data.chat_users.length) {
+      return;
+    }
+
+    const { user } = data.chat_users[0];
+
+    dispatch({
+      type: ACTION_TYPES.USER_JOINED_CHAT,
+      user
     });
   });
 
@@ -258,6 +379,21 @@ function ChatPage() {
     }
   };
 
+  const openInviteDialog = () =>
+    dispatch({ type: ACTION_TYPES.OPEN_INVITE_DIALOG });
+
+  const closeInviteDialog = () =>
+    dispatch({ type: ACTION_TYPES.CLOSE_INVITE_DIALOG });
+
+  const openUsersDialog = () =>
+    dispatch({ type: ACTION_TYPES.OPEN_USERS_DIALOG });
+  const closeUsersDialog = () =>
+    dispatch({ type: ACTION_TYPES.CLOSE_USERS_DIALOG });
+
+  const closeNewUserJoinedSnackbar = () => {
+    dispatch({ type: ACTION_TYPES.CLOSE_NEW_USER_SNACKBAR });
+  };
+
   // handle upserting the user to the chat
   useEffect(() => {
     if (state.user) {
@@ -272,7 +408,7 @@ function ChatPage() {
 
   // fetch the initial messages
   useEffect(() => {
-    fetchInitialMessages()
+    fetchChatInfo()
       .then(({ data, error }) => {
         if (error) {
           return dispatch({
@@ -282,8 +418,10 @@ function ChatPage() {
         }
 
         dispatch({
-          type: ACTION_TYPES.INITIAL_MESSAGES_LOADED,
-          messages: data.messages
+          type: ACTION_TYPES.CHAT_LOADED,
+          messages: data.chats_by_pk.messages,
+          chatName: data.chats_by_pk.name,
+          users: data.chats_by_pk.users.map(u => u.user)
         });
       })
       .catch(error => {
@@ -292,7 +430,7 @@ function ChatPage() {
           error
         });
       });
-  }, [fetchInitialMessages]);
+  }, [fetchChatInfo]);
 
   if (!state.user) {
     return (
@@ -306,17 +444,73 @@ function ChatPage() {
     );
   }
 
-  if (state.isLoading) {
-    return <span>loading</span>;
-  }
-
   return (
     <div className="">
-      <Header />
+      <Header>
+        <Grid container>
+          <Hidden smDown>
+            <Grid item md={3} className={classes.vertAlign}>
+              <Typography variant="h6">North Pole Hotline</Typography>
+            </Grid>
+          </Hidden>
+
+          <Grid item xs={8} md={6}>
+            <Typography variant="h6" align="center">
+              {state.chatName}
+            </Typography>
+
+            {state.users.length > 0 && (
+              <Typography
+                variant="subtitle1"
+                align="center"
+                className={classes.userList}
+                onClick={openUsersDialog}
+              >
+                {state.users.map(({ name }) => name).join(", ")}
+              </Typography>
+            )}
+          </Grid>
+          <Grid
+            item
+            xs={4}
+            md={3}
+            className={classes.vertAlign}
+            alignItems="flex-end"
+          >
+            <div>
+              <Button
+                variant="contained"
+                fullWidth={false}
+                color="primary"
+                onClick={openInviteDialog}
+              >
+                Invite
+              </Button>
+            </div>
+          </Grid>
+        </Grid>
+      </Header>
+      <ChatUsersDialog
+        users={state.users}
+        open={state.isUsersDialogOpen}
+        onClose={closeUsersDialog}
+      />
+      <InviteDialog
+        url={window.location.href}
+        open={state.isInviteDialogOpen}
+        onClose={closeInviteDialog}
+      />
+      <NewUserNotification
+        open={state.isNewUserJoinedSnackbarOpen}
+        onClose={closeNewUserJoinedSnackbar}
+        user={state.newUserJoined}
+      />
       <Snowfall>
         <Container maxWidth="sm">
           {state.error && <span>An error occurred</span>}
-          {state.messages.length === 0 && <span>No messages yet</span>}
+          {state.messages.length === 0 && state.chatName !== "loading..." && (
+            <span>No messages yet</span>
+          )}
           <div className={classes.messagesContainer}>
             {state.messages.map(m => {
               return (

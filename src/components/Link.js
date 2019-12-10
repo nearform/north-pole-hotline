@@ -8,7 +8,8 @@ const Link = React.forwardRef((props, ref) => (
 
 class AppLink extends Component {
   render() {
-    return <MuiLink underline="always" component={Link} {...this.props} />
+    return <MuiLink underline="always" color
+    ="primary" component={Link} {...this.props} />
   }
 }
 

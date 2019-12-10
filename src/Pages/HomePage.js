@@ -8,11 +8,15 @@ import Box from "@material-ui/core/Box";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import Container from "@material-ui/core/Container";
+import Grid from "@material-ui/core/Grid";
 
+// components
 import Header from "../components/Header";
 import Snowman from "../components/Snowman";
 import Snowfall from "../components/Snowfall";
-import { Grid } from "@material-ui/core";
+
+// helpers
+import generateChatName from "../helpers/generate-chat-name";
 
 const CREATE_USER_MUTATION = `
 mutation CreateUser($user: users_insert_input!) {
@@ -60,7 +64,7 @@ function HomePage() {
 
     try {
       const [chatResult, userResult] = await Promise.all([
-        createChat(),
+        createChat({ variables: { name: generateChatName() } }),
         createUser({ variables: { user: { name } } })
       ]);
 
@@ -94,7 +98,9 @@ function HomePage() {
 
   return (
     <div>
-      <Header />
+      <Header>
+        <Typography variant="h6" color="primary">North Pole Hotline</Typography>
+      </Header>
       <Snowfall>
         <main>
           <Box pt={8}>
@@ -129,10 +135,12 @@ function HomePage() {
                     variant="contained"
                     size="large"
                     fullWidth
+                    color="primary"
                     style={{ height: "100%" }}
                     onClick={handleSubmit}
+                    disabled={!name}
                   >
-                    Go
+                    Chat now
                   </Button>
                 </Grid>
               </Grid>

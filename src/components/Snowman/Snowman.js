@@ -1,3 +1,4 @@
+/* Kudos goes to https://codepen.io/Coding-Artist/pen/romREE */
 import React from 'react'
 import './Snowman.css'
 
