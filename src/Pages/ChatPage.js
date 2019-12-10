@@ -19,6 +19,7 @@ import useUser from "../hooks/useUser";
 // components
 import Header from "../components/Header";
 import Snowfall from "../components/Snowfall";
+import Snowman from "../components/Snowman";
 import Message from "../components/Message";
 import MessageComposer from "../components/MessageComposer";
 import ChatUsersDialog from "../components/ChatUsersDialog";
@@ -214,17 +215,25 @@ const useStyles = makeStyles(theme => ({
       textDecoration: "underline"
     }
   },
+  centerChannel: {
+    zIndex: 10
+  },
   messagesContainer: {
     height: "calc(80vh - 60px)",
     overflow: "scroll"
   },
   newUserJoinedSB: {
     backgroundColor: theme.palette.primary.main
+  },
+  snowman: {
+    position: "absolute",
+    left: 50,
+    bottom: 200
   }
 }));
 
 function ChatPage() {
-  const messageContainerRef = useRef()
+  const messageContainerRef = useRef();
   const user = useUser();
   const classes = useStyles();
   const { id: chatId } = useParams();
@@ -432,9 +441,9 @@ function ChatPage() {
   useEffect(() => {
     messageContainerRef.current.scroll({
       top: messageContainerRef.current.scrollHeight,
-      behavior: 'smooth'
-    })
-  }, [state.messages])
+      behavior: "smooth"
+    });
+  }, [state.messages]);
 
   if (!state.user) {
     return (
@@ -465,17 +474,15 @@ function ChatPage() {
               </Typography>
             )}
           </Grid>
-          <Grid
-            item
-            xs={3}
-            sm={2}
-            md={4}
-          >
+          <Grid item xs={3} sm={2} md={4}>
             <Box display="flex" height="100%" justifyContent="flex-end">
               <Hidden mdUp>
-              <IconButton aria-label="add-new-user" onClick={openInviteDialog}>
-                <PersonAddIcon color="primary" />
-              </IconButton>
+                <IconButton
+                  aria-label="add-new-user"
+                  onClick={openInviteDialog}
+                >
+                  <PersonAddIcon color="primary" />
+                </IconButton>
               </Hidden>
 
               <Hidden smDown>
@@ -508,7 +515,12 @@ function ChatPage() {
         user={state.newUserJoined}
       />
       <Snowfall>
-        <Container maxWidth="sm">
+        <Hidden mdDown>
+          <Box className={classes.snowman}>
+            <Snowman />
+          </Box>
+        </Hidden>
+        <Container maxWidth="sm" className={classes.centerChannel}>
           {state.error && <span>An error occurred</span>}
           <div className={classes.messagesContainer} ref={messageContainerRef}>
             {state.messages.map(m => {
