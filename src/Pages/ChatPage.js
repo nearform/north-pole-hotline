@@ -439,10 +439,16 @@ function ChatPage() {
   }, [fetchChatInfo]);
 
   useEffect(() => {
-    messageContainerRef.current.scroll({
-      top: messageContainerRef.current.scrollHeight,
-      behavior: "smooth"
-    });
+    if (
+      messageContainerRef &&
+      messageContainerRef.current &&
+      messageContainerRef.current.scroll
+    ) {
+      messageContainerRef.current.scroll({
+        top: messageContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   }, [state.messages]);
 
   if (!state.user) {
