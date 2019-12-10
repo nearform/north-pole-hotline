@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useSubscription, useMutation, useManualQuery } from "graphql-hooks";
 
@@ -224,6 +224,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ChatPage() {
+  const messageContainerRef = useRef()
   const user = useUser();
   const classes = useStyles();
   const { id: chatId } = useParams();
@@ -428,8 +429,14 @@ function ChatPage() {
       });
   }, [fetchChatInfo]);
 
+  useEffect(() => {
+    messageContainerRef.current.scroll({
+      top: messageContainerRef.current.scrollHeight,
+      behavior: 'smooth'
+    })
+  }, [state.messages])
+
   if (!state.user) {
-    debugger;
     return (
       <JoinChatDialog
         chatName={state.chatName || state.chatId}
@@ -503,7 +510,7 @@ function ChatPage() {
       <Snowfall>
         <Container maxWidth="sm">
           {state.error && <span>An error occurred</span>}
-          <div className={classes.messagesContainer}>
+          <div className={classes.messagesContainer} ref={messageContainerRef}>
             {state.messages.map(m => {
               return (
                 <Box my={2} key={m.id}>
