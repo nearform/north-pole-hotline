@@ -21,5 +21,5 @@ export default function generateChatName() {
   const b = partB[Math.floor(Math.random() * partB.length)]
   const postFix = Math.floor(Math.random() * 100);
 
-  return `${a}-${b}-${postFix}`
+  return `${a} ${b} ${postFix}`
 }

@@ -126,6 +126,7 @@ function HomePage() {
                     fullWidth
                     onChange={e => setName(e.target.value)}
                     style={{ backgroundColor: "white" }}
+                    onKeyDown={event => { if (event.key === "Enter") { handleSubmit(event) }}}
                   />
                 </Grid>
                 <Grid item xs={12} lg={6}>

@@ -105,7 +105,6 @@ export default function ButtonAppBar(props) {
             <ListItem>
               <ListItemText>Chats:</ListItemText>
             </ListItem>
-            {loading && <ListItemText>Loading...</ListItemText>}
             {chats.map(({ chat }) => (
               <ListItem key={chat.id} onClick={toggleDrawer}>
                 <Link to={`/chat/${chat.id}`}>
@@ -113,6 +112,7 @@ export default function ButtonAppBar(props) {
                 </Link>
               </ListItem>
             ))}
+            {loading && <ListItemText>Loading...</ListItemText>}
           </List>
         </Drawer>
         <Toolbar>
