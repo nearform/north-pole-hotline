@@ -10,6 +10,8 @@ import Typography from "@material-ui/core/Typography";
 import Hidden from "@material-ui/core/Hidden";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
+import IconButton from "@material-ui/core/IconButton";
+import PersonAddIcon from "@material-ui/icons/PersonAdd";
 
 // hooks
 import useUser from "../hooks/useUser";
@@ -22,7 +24,7 @@ import MessageComposer from "../components/MessageComposer";
 import ChatUsersDialog from "../components/ChatUsersDialog";
 import InviteDialog from "../components/InviteDialog";
 import NewUserNotification from "../components/NewUserNotification";
-import JoinChatDialog from "../components/JoinChatDialog"
+import JoinChatDialog from "../components/JoinChatDialog";
 
 const ADD_USER_TO_CHAT_MUTATION = `
 mutation AddUserToChat($chatId: uuid!, $userId: uuid!) {
@@ -203,11 +205,6 @@ function reducer(state, action) {
 }
 
 const useStyles = makeStyles(theme => ({
-  vertAlign: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center"
-  },
   userList: {
     textOverflow: "ellipsis",
     overflow: "hidden",
@@ -218,7 +215,7 @@ const useStyles = makeStyles(theme => ({
     }
   },
   messagesContainer: {
-    height: "calc(85vh - 65px)",
+    height: "calc(80vh - 60px)",
     overflow: "scroll"
   },
   newUserJoinedSB: {
@@ -352,7 +349,7 @@ function ChatPage() {
     });
   };
 
-  const addNewUser = async (name) => {
+  const addNewUser = async name => {
     try {
       const { data } = await createUser({ variables: { user: { name } } });
       const [user] = data.insert_users.returning;
@@ -434,21 +431,18 @@ function ChatPage() {
   if (!state.user) {
     debugger;
     return (
-      <JoinChatDialog chatName={state.chatName || state.chatId } onSubmit={addNewUser} />
+      <JoinChatDialog
+        chatName={state.chatName || state.chatId}
+        onSubmit={addNewUser}
+      />
     );
   }
 
   return (
-    <div className="">
+    <div className="root">
       <Header>
-        <Grid container>
-          <Hidden smDown>
-            <Grid item md={3} className={classes.vertAlign}>
-              <Typography variant="h6">North Pole Hotline</Typography>
-            </Grid>
-          </Hidden>
-
-          <Grid item xs={8} md={6}>
+        <Grid container spacing={1} alignItems="center">
+          <Grid item xs={9} sm={10} md={8}>
             <Typography variant="h6" align="center">
               {state.chatName}
             </Typography>
@@ -466,21 +460,28 @@ function ChatPage() {
           </Grid>
           <Grid
             item
-            xs={4}
-            md={3}
-            className={classes.vertAlign}
-            alignItems="flex-end"
+            xs={3}
+            sm={2}
+            md={4}
           >
-            <div>
-              <Button
-                variant="contained"
-                fullWidth={false}
-                color="primary"
-                onClick={openInviteDialog}
-              >
-                Invite
-              </Button>
-            </div>
+            <Box display="flex" height="100%" justifyContent="flex-end">
+              <Hidden mdUp>
+              <IconButton aria-label="add-new-user" onClick={openInviteDialog}>
+                <PersonAddIcon color="primary" />
+              </IconButton>
+              </Hidden>
+
+              <Hidden smDown>
+                <Button
+                  variant="contained"
+                  fullWidth={false}
+                  color="primary"
+                  onClick={openInviteDialog}
+                >
+                  Invite
+                </Button>
+              </Hidden>
+            </Box>
           </Grid>
         </Grid>
       </Header>
@@ -502,9 +503,6 @@ function ChatPage() {
       <Snowfall>
         <Container maxWidth="sm">
           {state.error && <span>An error occurred</span>}
-          {state.messages.length === 0 && state.chatName !== "loading..." && (
-            <span>No messages yet</span>
-          )}
           <div className={classes.messagesContainer}>
             {state.messages.map(m => {
               return (

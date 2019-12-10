@@ -29,9 +29,11 @@ export default function MessageComposer(props) {
       <Box display="flex">
         <Box flexGrow={1}>
           <TextField
+            
             className={classes.root}
             label="Your message"
             variant="standard"
+            type="text"
             multiline
             fullWidth
             rows="1"

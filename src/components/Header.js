@@ -6,7 +6,10 @@ import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
+import Grid from "@material-ui/core/Grid";
 import Drawer from "@material-ui/core/Drawer";
+import Hidden from "@material-ui/core/Hidden";
+import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
@@ -22,7 +25,7 @@ import Link from "./Link";
 
 const useStyles = makeStyles(theme => ({
   root: {
-    height: 65
+    height: 56
   },
   menuButton: {
     marginRight: theme.spacing(2)
@@ -44,12 +47,53 @@ export default function ButtonAppBar(props) {
 
   const chats = data ? data.users_by_pk.chats : [];
 
+  const homepageGridItem = (
+    <Grid item xs={12}>
+      <IconButton
+        edge="start"
+        color="inherit"
+        aria-label="menu"
+        onClick={toggleDrawer}
+      >
+        <MenuIcon color="secondary" />
+      </IconButton>
+      <Typography variant="h6" display="inline" role="img" aria-label="title">
+        North Pole Hotline <span role="img" aria-label="wrapped-gift-emoji">🎁</span>
+      </Typography>
+    </Grid>
+  );
+
+  const chatGridItem = (
+    <Grid item xs={2} sm={1} md={3}>
+      <IconButton
+        edge="start"
+        color="inherit"
+        aria-label="menu"
+        onClick={toggleDrawer}
+      >
+        <MenuIcon color="secondary" />
+      </IconButton>
+      <Hidden smDown>
+        <Typography variant="h6" display="inline">
+          North Pole Hotline <span role="img" aria-label="wrapped-gift-emoji">🎁</span>
+        </Typography>
+      </Hidden>
+    </Grid>
+  );
+
+  const firstGridItem = props.isHomePage ? homepageGridItem : chatGridItem;
+
   return (
     <div className={classes.root}>
       <AppBar position="fixed" color="inherit">
         <Drawer open={drawerOpen} onClose={toggleDrawer}>
           <List>
-            <Link to="/" underline="none" color="inherit" onClick={toggleDrawer}>
+            <Link
+              to="/"
+              underline="none"
+              color="inherit"
+              onClick={toggleDrawer}
+            >
               <ListItem>
                 <ListItemIcon>
                   <HomeIcon color="secondary" />
@@ -72,16 +116,12 @@ export default function ButtonAppBar(props) {
           </List>
         </Drawer>
         <Toolbar>
-          <IconButton
-            edge="start"
-            className={classes.menuButton}
-            color="inherit"
-            aria-label="menu"
-            onClick={toggleDrawer}
-          >
-            <MenuIcon color="secondary" />
-          </IconButton>
-          {props.children}
+          <Grid container alignItems="center">
+            {firstGridItem}
+            <Grid item xs={10} sm={11} md={9}>
+              {props.children}
+            </Grid>
+          </Grid>
         </Toolbar>
       </AppBar>
     </div>

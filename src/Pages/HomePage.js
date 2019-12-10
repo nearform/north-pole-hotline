@@ -98,18 +98,16 @@ function HomePage() {
 
   return (
     <div>
-      <Header>
-        <Typography variant="h6" color="primary">North Pole Hotline</Typography>
-      </Header>
+      <Header isHomePage />
       <Snowfall>
         <main>
           <Box pt={8}>
-            <Typography variant="h2" align="center">
+            <Typography variant="h4" align="center">
               Keep those special moments secret
             </Typography>
           </Box>
-          <Box mt={8}>
-            <Typography variant="h3" align="center">
+          <Box mt={4}>
+            <Typography variant="h5" align="center">
               Start a private chat now:
             </Typography>
           </Box>
