@@ -298,10 +298,14 @@ function ChatPage() {
       });
     }
 
-    dispatch({
-      type: ACTION_TYPES.NEW_MESSAGE,
-      message
-    });
+    const alreadyExists = state.messages.some(({ id }) => id === message.id)
+
+    if (!alreadyExists) {
+      dispatch({
+        type: ACTION_TYPES.NEW_MESSAGE,
+        message
+      });
+    }
   });
 
   const userJoinedOperation = {
@@ -326,10 +330,14 @@ function ChatPage() {
 
     const { user } = data.chat_users[0];
 
-    dispatch({
-      type: ACTION_TYPES.USER_JOINED_CHAT,
-      user
-    });
+    const alreadyExists = state.users.some(({ id }) => id === user.id)
+
+    if (!alreadyExists) {
+      dispatch({
+        type: ACTION_TYPES.USER_JOINED_CHAT,
+        user
+      });
+    }
   });
 
   const handleSendMessage = async body => {
